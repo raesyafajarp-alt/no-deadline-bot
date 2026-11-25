@@ -88,11 +88,21 @@ def main() -> None:
             os.makedirs(os.path.dirname(path), exist_ok=True)
             with open(path, "w", encoding="utf-8") as f:
                 f.write(LINE + "\n")
-            print(f"wrote {path}: {len(LINE)} characters")
-            print(LINE)
-            return
         except OSError as e:
             print(f"cannot write {path}: {e}")
+            continue
+        # Verify what actually landed on disk, rather than trusting the
+        # write: re-read the file and re-apply the gate to its contents, so
+        # a truncated or mangled write is caught here instead of by the
+        # scorer. The trailing newline is the file's line ending, not part
+        # of the entry, so the gate is checked on the line without it.
+        with open(path, "r", encoding="utf-8") as f:
+            written = f.read()
+        assert written == LINE + "\n", f"{path} content mismatch"
+        assert 1 <= len(LINE) <= 200 and LINE.strip()
+        print(f"wrote {path}: {len(LINE)} characters (verified on re-read)")
+        print(LINE)
+        return
     raise SystemExit("no writable output path")
 
 
